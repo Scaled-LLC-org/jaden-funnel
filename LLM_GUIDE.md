@@ -1,0 +1,234 @@
+# LLM_GUIDE.md — jaden-funnel
+
+Lead-gen funnel for fitness coach **Jaden Levin** / brand **"Aesthetic Mastery"** (natural physique, no gear). Reflects the **working tree**. Legacy `components/ui/**` + the old `hooks/use-outside-click.tsx` are deleted on disk but still tracked — ignore; `git add -A` to stage.
+
+```
+/ (or /quiz) → /results → /vsl → /book → [Calendly] → /thank-you      /community = standalone Skool upsell
+  quiz          scoring     VSL     booking  external     nurture
+```
+
+---
+
+## 1. Overview
+
+Quiz → VSL → Calendly booking → post-booking nurture. **No backend/DB/API/auth** — all state rides the URL query string.
+
+| Feature | Where |
+|---|---|
+| Multi-step quiz + lead capture (name/email/phone) | `QuizFlow` |
+| Scored 4-pillar report (SSR) | `/results` + `lib/quiz-scoring.ts` |
+| VSL w/ click-to-pause exit-intent CTA | `/vsl` + `VslPlayer` |
+| Inline Calendly booking | `/book` + `CalendlyEmbed` |
+| Post-booking nurture, TZ-localized call time | `/thank-you` + `useCallWhen` |
+| Funnel event logging (GTM/dataLayer seam) | `lib/logger.ts` |
+| Membership upsell ($97/mo) | `/community` |
+
+Not wired yet: real Calendly/Skool URLs, YouTube IDs, analytics endpoint.
+
+## 2. Tech Stack
+
+| Layer | Choice | Notes |
+|---|---|---|
+| Framework | Next.js `16.2.9` | App Router, RSC. ⚠️ `searchParams` is a **Promise** (`await` it). See `AGENTS.md`. |
+| UI | React `19.2.4` | RSC + small client islands |
+| Lang | TypeScript `^5` | strict; alias `@/* → ./*` |
+| Styles | Tailwind `^4` | tokens in `app/globals.css` `@theme`, **not** `tailwind.config.ts` |
+| Fonts | `next/font/google` | Inter, Caveat, JetBrains Mono |
+| Class util | `clsx`+`tailwind-merge` → `cn()` | vestigial |
+| Pkg mgr | bun (`bun.lockb`) | dev runs on `:3001` (`:3000` is another client) |
+
+Integrations: **Calendly** (`CalendlyEmbed`, placeholder URL), **Skool** (`/community`, placeholder), **YouTube** (`VideoPlayer`, empty IDs → static posters). No env vars. No secrets.
+
+## 3. Architecture
+
+```
+Browser GET /  → app/page.tsx (Server) → <QuizFlow/> island
+   QuizFlow holds answers in React state (NOT persisted)
+   finish() → URLSearchParams → router.push(/results?age=..&goals=..&name=..)
+                         │
+   /results (Server, async): sp = await searchParams
+        readCtx(sp) → scorePillars(ctx) [lib/quiz-scoring, pure SSR]
+        logger.info("results_scored") ; CTA Link → /vsl?{toQuery(sp)}
+                         │ query forwarded verbatim each hop
+   /vsl → /book (Calendly) → Calendly EXTERNAL redirects → /thank-you?invitee_first_name,event_start_time
+                         │
+   /thank-you (Server): reads Calendly params; islands localize time via useCallWhen(iso)
+```
+
+Decisions: (1) **URL is the state** — each page rebuilds context from `searchParams`, `toQuery()` re-threads it. (2) Server renders copy; islands handle interaction. (3) Pure logic in `lib/` runs at SSR (scores in initial HTML). (4) TZ rendering deferred to client (`useCallWhen`) to avoid hydration mismatch.
+
+## 4. Folder Structure
+
+```
+app/
+  layout.tsx          root: 3 google fonts + metadata
+  globals.css         ★ design tokens (@theme) + .am-* classes + keyframes
+  page.tsx quiz/      → <QuizFlow/>
+  results/ vsl/ book/ thank-you/   async Server pages (await searchParams)
+  community/          Skool upsell (standalone)
+components/funnel/     ★ all live components
+  BrandHeader SiteFooter UrgencyBar           server
+  QuizFlow VideoPlayer VslPlayer ScoreRing Countdown CalendlyEmbed
+  WaitHeadline ThankYouCalendar ThankYouStickyBar   client islands
+hooks/useCallWhen.ts   localize Calendly ISO → viewer TZ (hydration-safe)
+lib/
+  quiz-scoring.ts     pillar scoring (Ctx, PILLARS, readCtx, scorePillars, band) — SSR-safe
+  search-params.ts    SearchParams type, firstParam(), toQuery()
+  call-when.ts        parseCallWhen(iso) — client-only intent
+  logger.ts           structured funnel logger (dataLayer seam)
+  utils.ts            cn() — vestigial
+public/posters/*.svg   placeholder video posters
+```
+
+## 5. Components
+
+Props are typed inline. **Server:** BrandHeader, SiteFooter, UrgencyBar. **Client (`"use client"`):** the rest.
+
+| Component | Props | Used by |
+|---|---|---|
+| `BrandHeader` | `centered?=false` `border?=true` `withName?=true` | results, vsl, book, thank-you, community |
+| `SiteFooter` | `children?` (override disclaimer) | all above |
+| `UrgencyBar` | `children` (bar text) | vsl, book |
+| `QuizFlow` | — (owns all quiz state; pushes to /results) | /, /quiz |
+| `VideoPlayer` | `poster` `youtubeId?` `ratio?="16/9"` | thank-you |
+| `VslPlayer` | `bookHref` | vsl |
+| `ScoreRing` | `value:number` (0–100, rAF-animated) | results |
+| `Countdown` | `seconds?=420` (mm:ss) | results |
+| `CalendlyEmbed` | — (injects script + widget) | book |
+| `WaitHeadline` | `firstName` `iso` `callDate` `callTime` | thank-you |
+| `ThankYouCalendar` | `iso` | thank-you |
+| `ThankYouStickyBar` | — (reveals after 3.5s) | thank-you |
+
+`QuizFlow` internal-only: `OptCard`, `BackBtn`, `Analyzing`.
+
+## 6. Pages & Routing
+
+No auth, middleware, or API routes. All routes public.
+
+| Route | File | Render | Reads searchParams |
+|---|---|---|---|
+| `/`, `/quiz` | `app/page.tsx`, `app/quiz/page.tsx` | Server → `<QuizFlow/>` | no |
+| `/results` | `app/results/page.tsx` | Server (dynamic) | yes — quiz answers |
+| `/vsl` | `app/vsl/page.tsx` | Server (dynamic) | yes — forward only |
+| `/book` | `app/book/page.tsx` | Server (dynamic) | yes — `goal` for copy |
+| `/thank-you` | `app/thank-you/page.tsx` | Server (dynamic) | yes — Calendly params |
+| `/community` | `app/community/page.tsx` | Server (static) | no |
+
+Pages: `searchParams: Promise<SearchParams>` → `const sp = await searchParams`. Query in flight: quiz sets `age, goals, situation, frequency, natural, commit, name, email, phone` (⚠️ not `goal` — §10); Calendly sets `invitee_first_name, event_start_time, date, time`.
+
+## 7. Component Hierarchy
+
+```
+/ , /quiz → QuizFlow → screen renderer by SCREENS[i].type:
+            intro|single|multi → OptCard×N (+BackBtn); proof; analyzing→Analyzing; email→inputs+submit
+
+/results  → BrandHeader · ScoreRing(overall) · BULLETS · pillar card×4 (band color)
+            · summary · Countdown · Link /vsl?{query} · SiteFooter
+
+/vsl      → UrgencyBar · BrandHeader · VslPlayer(bookHref → exit-intent Link) · CTA · SiteFooter
+
+/book     → UrgencyBar · BrandHeader · CalendlyEmbed · SiteFooter
+
+/thank-you→ BrandHeader · WaitHeadline · VideoPlayer · 3 steps(ThankYouCalendar +
+            MessageGraphic/VideoGraphic inline) · VideoPlayer+CHECKLIST · BREAKOUTS(VideoPlayer×3)
+            · TESTIMONIALS(VideoPlayer×4) · ABOUT · SiteFooter · ThankYouStickyBar
+
+/community→ BrandHeader · pricing card · Skool <a> · SiteFooter
+```
+
+## 8. Hooks & Logic Functions
+
+**Custom hook**
+
+| Hook | Signature | Notes |
+|---|---|---|
+| `useCallWhen` | `(iso: string) → CallWhen \| null` | `hooks/useCallWhen.ts`. Returns `null` first render (SSR-match), localizes after mount. Warns `call_when_parse_failed` on bad ISO. Used by `WaitHeadline`, `ThankYouCalendar`. |
+
+**Pure utils (`lib/`)**
+
+| Fn | Signature | File |
+|---|---|---|
+| `readCtx` | `(sp: SearchParams) → Ctx` | quiz-scoring.ts |
+| `scorePillars` | `(ctx: Ctx) → { scored, overall, top }` | quiz-scoring.ts |
+| `band` | `(score: number) → { label, color }` | quiz-scoring.ts |
+| `firstParam` | `(v: string\|string[]\|undefined) → string` | search-params.ts |
+| `toQuery` | `(sp: SearchParams) → string` | search-params.ts |
+| `parseCallWhen` | `(iso: string) → CallWhen \| null` | call-when.ts (client only) |
+| `logger` | `.info/.debug/.warn/.error(event, context?)` | logger.ts |
+
+Island effects (built-in hooks): `QuizFlow` (state machine + analyzing auto-advance + `router.push`), `Analyzing` (750ms stepper), `ScoreRing` (rAF ease), `Countdown` (1s interval), `CalendlyEmbed` (script inject/cleanup), `ThankYouStickyBar` (3.5s reveal), `VideoPlayer`/`VslPlayer` (toggle).
+
+## 9. Data Flow
+
+**Quiz → report:** answers in React state → `finish()` logs `quiz_lead_submitted` (no PII) + `router.push(/results?…)` → `/results` server `readCtx`→`scorePillars`→SSR (`ScoreRing`/`Countdown` hydrate; scores already in HTML).
+
+**Forwarding:** every internal `Link` uses `toQuery(sp)`; `/vsl` computes `bookHref=/book?{toQuery(sp)}` for both CTA and exit-intent overlay.
+
+**Booking → thank-you:** Calendly redirects with `invitee_first_name`+`event_start_time` → `/thank-you` `firstParam()`s them → `useCallWhen(iso)` localizes day/time client-side after mount.
+
+**Logging:** `logger` → console (dev) + `window.dataLayer.push` (prod). Events: `quiz_start`, `quiz_answer{key,value}`, `quiz_lead_submitted{dialCode,answerKeys}`, `results_scored{overall,top}`, `vsl_play`/`vsl_exit_intent_shown`/`vsl_cta_click`, `video_play`, `booking_view`/`calendly_loaded`/`calendly_load_failed`, `call_when_parse_failed`.
+
+## 10. Business Logic — Pillar Scoring
+
+`lib/quiz-scoring.ts`. Persuasion math from URL answers; no DB. Each pillar: `clamp(base + Σ bonuses)`, `clamp = max(34, min(97, round))`. `overall = mean`; `top = highest = "biggest opportunity"`.
+
+| key | Title | Base | Top bonuses |
+|---|---|---:|---|
+| nutrition | Macro Calibration System | 58 | situation=nutrition +30, goals∋fat +14 |
+| training | Controlled Intensity Method | 55 | situation=stuck +28, situation=random +20 |
+| recovery | Winning Weeks Framework | 48 | frequency=1-2 +30, situation=tried-everything +16 |
+| coaching | 1:1 Accountability Accelerator | 60 | commit=now +30, commit=soon +20 |
+
+`band`: ≥85 CRITICAL `#0086a8` · ≥70 NEEDS ATTENTION `#1f9e7a` · ≥55 WORTH ADDRESSING `#caa53d` · else BENEFICIAL `#7a8893`.
+
+⚠️ **`goal` is always empty** — intro screen calls `pick(undefined, …)`, which never stores. So `goal`-based bonuses and `/book` `goalWord` are dead until the intro gets a `key`. `age` collected but unused.
+
+## 11. Key Patterns
+
+- **Async page:** `searchParams: Promise<SearchParams>` → `await`; coerce scalars with `firstParam()`.
+- **URL as state:** forward with `toQuery(sp)` on every internal Link; no store/context.
+- **Islands:** pages stay Server; stateful bits are small `"use client"` files in `components/funnel/`.
+- **Hydration-safe TZ:** never compute `Date`-display in render → use `useCallWhen` (null-first).
+- **Styling:** inline `style={{ … var(--token) }}` + `.am-*` classes; add colors to `@theme`, not components.
+- **Logging:** `logger.info("event", {ctx})`; never pass name/email/phone/tokens.
+- **Static copy:** top-of-file typed consts (`SCREENS`, `PILLARS`, `BREAKOUTS`, …) `.map()`ed.
+
+## 12. Development Guide
+
+Run: `bun dev` (`:3001` here) · `bun run build` · `bun start`. Honor `AGENTS.md` (Next 16 — read `node_modules/next/dist/docs/` when unsure).
+
+- **New page:** `app/<route>/page.tsx`, `async`, type `searchParams: Promise<SearchParams>`, compose `BrandHeader`→sections→`SiteFooter`, forward via `toQuery`.
+- **New island:** `components/funnel/X.tsx` + `"use client"`, single-concern, clean up timers/listeners, import into a Server page.
+- **New hook:** `hooks/use*.ts`; keep SSR-safe or defer browser work to `useEffect` (see `useCallWhen`).
+- **New util:** `lib/x.ts`, pure; call in Server page if no `window`/TZ.
+- **New token:** add `--color-x` to `@theme` in `globals.css` (+ `:root` alias if used as `var(--x)`).
+- **New log event:** `logger.info("snake_case", {nonPII})`.
+
+## 13. Best Practices
+
+**Do:** async Server pages + small islands · `await searchParams`+`firstParam()` · forward `toQuery` · `var(--token)` styling · pure SSR-safe `lib/` · `logger` for funnel events (no PII) · clean up effects.
+
+**Don't:** reintroduce `components/ui/**` or lean on `cn()`/`components.json` (vestigial) · compute TZ/`Date` in render · hardcode hex in components · assume pre-16 Next (sync searchParams / `pages/`) · add a store/DB for funnel state · log PII.
+
+## 14. Performance
+
+- Server-first; ~10 small islands, no state/fetch/animation libs.
+- Scores render in initial HTML (SSR `scorePillars`).
+- Fonts: `next/font` `display:swap`; Inter doubles as sans+serif.
+- Motion on `transform`/`opacity` (`am*` keyframes); `ScoreRing` rAF on a single SVG.
+- `VideoPlayer` mounts YouTube iframe only on click; `CalendlyEmbed` script on mount.
+- `<img>` used directly (eslint-disabled) — fine for SVG posters; use `next/image`+dims if raster added.
+
+## 15. Troubleshooting
+
+| Symptom | Cause → Fix |
+|---|---|
+| `searchParams.x` undefined / type error | It's a Promise → `await searchParams` first |
+| `goal` copy/scoring never fires; `/book` always "aesthetic" | intro `pick(undefined,…)` not stored → give intro `key:"goal"` |
+| Booking 404 / no name+time on `/thank-you` | placeholder `CALENDLY_URL` → set real URL + configure Calendly redirect w/ params |
+| Videos won't play (poster only) | `youtubeId` empty → add real IDs |
+| Hydration mismatch on `/thank-you` | computing `Date` in render → use `useCallWhen` (null-first) |
+| Color change ignored | edited `tailwind.config.ts` → edit `@theme` in `globals.css` (v4) |
+| ~120 deleted `components/ui/**` in `git status` | removed on disk, unstaged → `git add -A` |
+| Wrong app in browser | jaden-funnel dev is `:3001` (`:3000` is another client) |
+| Unknown Next API | read `node_modules/next/dist/docs/` (AGENTS.md) |

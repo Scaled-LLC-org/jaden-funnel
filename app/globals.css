@@ -1,28 +1,57 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+/* =========================================================================
+   AESTHETIC MASTERY — single source of design standards.
 
+   Design tokens live ONCE here in @theme. This also generates Tailwind
+   utilities (bg-accent, text-ink-soft, font-script, …). The short :root
+   aliases below are pointers (no duplicated values) so existing
+   var(--accent) style references keep working across the funnel.
+   Fonts are provided by next/font in app/layout.tsx via the --font-* vars.
+   ========================================================================= */
+@theme {
+  --color-bg: #ffffff;
+  --color-soft: #f4f7f9;
+  --color-paper: #f9fbfc;
+  --color-ink: #0c1418;
+  --color-ink-deep: #15232b;
+  --color-ink-soft: #4a5b65;
+  --color-ink-mute: #788893;
+  --color-rule: rgba(13, 40, 52, 0.12);
+  --color-rule-strong: rgba(13, 40, 52, 0.26);
+  --color-accent: #0086a8;
+  --color-accent-bright: #00b4d8;
+  --color-accent-soft: #e6f4f8;
+  --color-on-dark: #eef6f9;
+  --color-on-dark-soft: #b6c7cf;
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-inter), system-ui, sans-serif;
+  --font-script: var(--font-caveat), cursive;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+}
+
+/* short aliases — values defined once in @theme above */
 :root {
-  --bg: #ffffff;
-  --soft: #f4f7f9;
-  --paper: #f9fbfc;
-  --ink: #0c1418;
-  --ink-deep: #15232b;
-  --ink-soft: #4a5b65;
-  --ink-mute: #788893;
-  --rule: rgba(13, 40, 52, 0.12);
-  --rule-strong: rgba(13, 40, 52, 0.26);
-  --accent: #0086a8;
-  --accent-bright: #00b4d8;
-  --accent-soft: #e6f4f8;
-  --on-dark: #eef6f9;
-  --on-dark-soft: #b6c7cf;
-  --serif: 'Inter', system-ui, sans-serif;
-  --sans: 'Inter', system-ui, sans-serif;
-  --script: 'Caveat', cursive;
-  --mono: 'JetBrains Mono', monospace;
+  --bg: var(--color-bg);
+  --soft: var(--color-soft);
+  --paper: var(--color-paper);
+  --ink: var(--color-ink);
+  --ink-deep: var(--color-ink-deep);
+  --ink-soft: var(--color-ink-soft);
+  --ink-mute: var(--color-ink-mute);
+  --rule: var(--color-rule);
+  --rule-strong: var(--color-rule-strong);
+  --accent: var(--color-accent);
+  --accent-bright: var(--color-accent-bright);
+  --accent-soft: var(--color-accent-soft);
+  --on-dark: var(--color-on-dark);
+  --on-dark-soft: var(--color-on-dark-soft);
+  --serif: var(--font-serif);
+  --sans: var(--font-sans);
+  --script: var(--font-script);
+  --mono: var(--font-mono);
 }
 
 html, body {
@@ -46,6 +75,9 @@ body::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
 }
 
+/* =========================================================================
+   Shared component classes — used across every funnel surface.
+   ========================================================================= */
 .am-wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
 .am-eyebrow { font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--ink-mute); }
 .am-serif { font-family: var(--sans); font-weight: 700; }
@@ -80,5 +112,6 @@ body::before {
 @keyframes amBarUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
 @keyframes amBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(6px) } }
 @keyframes amFade { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes amSpin { to { transform: rotate(360deg) } }
 .am-bounce { animation: amBounce 1.5s ease-in-out infinite; }
 .am-fade { animation: amFade 0.35s ease-out; }

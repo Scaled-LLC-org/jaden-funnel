@@ -1,16 +1,21 @@
-"use client";
-
-import React, { Suspense } from "react";
+import { BrandHeader } from "@/components/funnel/BrandHeader";
+import { SiteFooter } from "@/components/funnel/SiteFooter";
 
 const SKOOL_URL = "https://www.skool.com/your-jaden-community"; // TODO: real link
 
-function CommunityContent() {
+const FEATURES = [
+  "Jaden's full natural nutrition + training system",
+  "The proprietary app + AI calorie/protein tracking",
+  "300+ workout video library",
+  "3 pre-built Peak Aesthetic Splits",
+  "Weekly meal-plan generation",
+  "Private community + monthly group calls",
+];
+
+export default function CommunityPage() {
   return (
     <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <header className="am-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid var(--rule)" }}>
-        <span className="am-eyebrow" style={{ color: "var(--ink-deep)" }}>Aesthetic Mastery</span>
-        <span className="am-serif" style={{ fontStyle: "italic", fontSize: 13, color: "var(--ink-mute)" }}>Jaden Levin</span>
-      </header>
+      <BrandHeader />
 
       <section style={{ padding: "64px 0", textAlign: "center" }}>
         <div className="am-wrap" style={{ maxWidth: 640 }}>
@@ -27,14 +32,7 @@ function CommunityContent() {
               <span className="am-serif" style={{ fontSize: 40, fontWeight: 600, color: "var(--ink-deep)" }}>$97</span>
               <span style={{ fontSize: 14, color: "var(--ink-mute)" }}>/month</span>
             </div>
-            {[
-              "Jaden's full natural nutrition + training system",
-              "The proprietary app + AI calorie/protein tracking",
-              "300+ workout video library",
-              "3 pre-built Peak Aesthetic Splits",
-              "Weekly meal-plan generation",
-              "Private community + monthly group calls",
-            ].map((f) => (
+            {FEATURES.map((f) => (
               <div key={f} style={{ display: "flex", gap: 10, marginBottom: 11 }}>
                 <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span>
                 <span style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 300 }}>{f}</span>
@@ -49,16 +47,7 @@ function CommunityContent() {
         </div>
       </section>
 
-      <footer style={{ background: "var(--ink)", padding: "40px 0 32px" }}>
-        <div className="am-wrap" style={{ textAlign: "center" }}>
-          <p className="am-eyebrow" style={{ color: "var(--on-dark)", marginBottom: 10 }}>Aesthetic Mastery</p>
-          <p style={{ fontSize: 11.5, color: "var(--on-dark-soft)", margin: 0 }}>&copy; {new Date().getFullYear()} Jaden Levin. Results vary. Not medical advice.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
-}
-
-export default function CommunityPage() {
-  return <Suspense fallback={<div style={{ minHeight: "100vh", background: "#fff" }} />}><CommunityContent /></Suspense>;
 }
