@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @config "../tailwind.config.ts";
 
 /* =========================================================================
@@ -54,7 +54,8 @@
   --mono: var(--font-mono);
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -78,14 +79,50 @@ body::before {
 /* =========================================================================
    Shared component classes — used across every funnel surface.
    ========================================================================= */
-.am-wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
-.am-eyebrow { font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--ink-mute); }
-.am-serif { font-family: var(--sans); font-weight: 700; }
-.am-h1 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; color: var(--ink-deep); }
-.am-h2 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.018em; line-height: 1.1; color: var(--ink-deep); }
-.am-accent { color: var(--accent); }
-.am-italic { font-style: normal; color: var(--accent); }
-.am-script { font-family: var(--script); font-weight: 600; }
+.am-wrap {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+}
+.am-eyebrow {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.am-serif {
+  font-family: var(--sans);
+  font-weight: 700;
+}
+.am-h1 {
+  font-family: var(--sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--ink-deep);
+}
+.am-h2 {
+  font-family: var(--sans);
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  line-height: 1.1;
+  color: var(--ink-deep);
+}
+.am-accent {
+  color: var(--accent);
+}
+.am-italic {
+  font-style: normal;
+  color: var(--accent);
+}
+.am-script {
+  font-family: var(--script);
+  font-weight: 600;
+}
 
 .am-btn {
   display: inline-block;
@@ -101,17 +138,108 @@ body::before {
   text-transform: uppercase;
   cursor: pointer;
   text-decoration: none;
-  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
-.am-btn:hover { transform: translateY(-2px); background: #0a93b8; box-shadow: 0 8px 24px -8px rgba(0,134,168,0.5); }
+.am-btn:hover {
+  transform: translateY(-2px);
+  background: #0a93b8;
+  box-shadow: 0 8px 24px -8px rgba(0, 134, 168, 0.5);
+}
 
-.am-vid { position: relative; width: 100%; overflow: hidden; border-radius: 8px; border: 1px solid var(--rule); background: var(--soft); }
-.am-vid-play { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.94); border: 1px solid var(--rule-strong); display: flex; align-items: center; justify-content: center; color: var(--ink); transition: transform .25s; }
-.am-vid:hover .am-vid-play { transform: scale(1.08); }
+.am-vid {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: var(--soft);
+}
+.am-vid-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--rule-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  transition: transform 0.25s;
+}
+.am-vid:hover .am-vid-play {
+  transform: scale(1.08);
+}
 
-@keyframes amBarUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
-@keyframes amBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(6px) } }
-@keyframes amFade { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
-@keyframes amSpin { to { transform: rotate(360deg) } }
-.am-bounce { animation: amBounce 1.5s ease-in-out infinite; }
-.am-fade { animation: amFade 0.35s ease-out; }
+@keyframes amBarUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes amBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+@keyframes amFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes amSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.am-bounce {
+  animation: amBounce 1.5s ease-in-out infinite;
+}
+.am-fade {
+  animation: amFade 0.35s ease-out;
+}
+
+/* Scroll-reveal — driven by useRevealOnScroll (.reveal → .reveal.visible).
+   Compositor-friendly props only; disabled on mobile + reduced-motion. */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+  will-change: opacity, transform;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+@media (max-width: 768px) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

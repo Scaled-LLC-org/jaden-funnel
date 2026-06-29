@@ -1,0 +1,36 @@
+# Dependency directories
+node_modules
+.next
+out
+
+# Build output directories
+build
+dist
+
+# Next.js specific
+.next
+public
+
+# Various lock files
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache files
+*.cache
+.cache
+
+# Logs
+*.log
+
+# Coverage directories
+coverage
+
+# Ignore all markdown files
+*.md

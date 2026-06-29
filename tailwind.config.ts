@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss'
 
 /**
  * Tailwind v4 config — wiring only.
@@ -6,10 +6,7 @@ import type { Config } from "tailwindcss";
  * which is the single source of truth and generates the matching utilities.
  */
 const config: Config = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-};
+  content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}'],
+}
 
-export default config;
+export default config
