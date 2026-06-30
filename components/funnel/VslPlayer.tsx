@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
 import { captureEvent } from '@/lib/analytics/posthog'
+import { VideoPoster } from '@/components/funnel/VideoPoster'
 
 const PRECALL_POSTER = '/posters/vsl.svg'
 
@@ -20,13 +21,7 @@ export function VslPlayer({ bookHref }: { bookHref: string }) {
 
   return (
     <div className='am-vid' style={{ aspectRatio: '16/9', margin: '0 auto', cursor: 'pointer' }} onClick={toggle}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={PRECALL_POSTER} alt='' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-      <div className='am-vid-play'>
-        <svg width='26' height='26' viewBox='0 0 24 24' fill='currentColor'>
-          <path d='M8 5v14l11-7z' />
-        </svg>
-      </div>
+      <VideoPoster poster={PRECALL_POSTER} iconSize={26} />
       {paused && (
         <div
           className='am-fade'

@@ -69,7 +69,7 @@ export function identifyUser(distinctId: string, traits?: Record<string, unknown
   try {
     localStorage.setItem(IDENTITY_KEY, JSON.stringify({ distinctId, ...traits }))
   } catch {
-    /* localStorage unavailable — ignore */
+    logger.debug('posthog_identity_cache_write_failed')
   }
 }
 
@@ -88,7 +88,7 @@ function reidentifyFromCache(): void {
       ph?.identify(distinctId, { ...traits })
     }
   } catch {
-    /* corrupt cache — ignore */
+    logger.debug('posthog_identity_cache_corrupt')
   }
 }
 

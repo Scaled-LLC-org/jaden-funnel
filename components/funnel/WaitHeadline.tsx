@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallWhen } from '@/hooks/useCallWhen'
+import { Accent } from '@/components/funnel/Accent'
 
 /** Client island — the thank-you H1 whose date clause localizes to the viewer's timezone. */
 export function WaitHeadline({ firstName, iso, callDate, callTime }: { firstName: string; iso: string; callDate: string; callTime: string }) {
@@ -12,20 +13,20 @@ export function WaitHeadline({ firstName, iso, callDate, callTime }: { firstName
       {when ? (
         <>
           on{' '}
-          <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>
+          <Accent>
             {when.day} at {when.time}
-          </em>{' '}
+          </Accent>{' '}
         </>
       ) : callDate ? (
         <>
           on{' '}
-          <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>
+          <Accent>
             {callDate}
             {callTime && ` at ${callTime}`}
-          </em>{' '}
+          </Accent>{' '}
         </>
       ) : null}
-      doesn&apos;t get <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>cancelled</em>
+      doesn&apos;t get <Accent>cancelled</Accent>
     </h1>
   )
 }

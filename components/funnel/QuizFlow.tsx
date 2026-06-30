@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { logger } from '@/lib/logger'
 import { getUtmParams } from '@/hooks/useUtmParams'
 import { submitLead } from '@/lib/lead-submit'
+import { CheckIcon } from '@/components/funnel/icons'
+import { StatGrid } from '@/components/funnel/StatGrid'
 
 /* =========================================================================
    JADEN QUIZ — WarriorBabe-style mechanics, adapted to natural physique.
@@ -169,6 +171,7 @@ export function QuizFlow() {
 
   const next = () => setI(n => Math.min(n + 1, SCREENS.length - 1))
   const back = () => {
+    logger.debug('quiz_back', { from: screen.type })
     setMulti([])
     setI(n => Math.max(n - 1, 0))
   }
@@ -213,18 +216,23 @@ export function QuizFlow() {
     const utms = getUtmParams()
     const urlParams = typeof window !== 'undefined' ? Object.fromEntries(new URLSearchParams(window.location.search)) : {}
 
-    // Lead capture → analytics + Pipedream + Supabase (never throws / blocks).
-    await submitLead({
-      url: typeof window !== 'undefined' ? window.location.href : '',
-      email,
-      name,
-      firstName,
-      lastName: lastName || undefined,
-      phone: fullPhone,
-      formData: { ...answers },
-      utms,
-      urlParams,
-    })
+    // Lead capture → analytics + Pipedream + Supabase (designed never to throw);
+    // guard anyway so an unexpected failure never strands the user mid-funnel.
+    try {
+      await submitLead({
+        url: typeof window !== 'undefined' ? window.location.href : '',
+        email,
+        name,
+        firstName,
+        lastName: lastName || undefined,
+        phone: fullPhone,
+        formData: { ...answers },
+        utms,
+        urlParams,
+      })
+    } catch (err) {
+      logger.error('quiz_lead_submit_failed', { message: err instanceof Error ? err.message : 'unknown' })
+    }
 
     const params = new URLSearchParams({ ...answers, name, email, phone: fullPhone }).toString()
     router.push(`/results?${params}`)
@@ -333,18 +341,7 @@ export function QuizFlow() {
                 {screen.headline}
               </h2>
               <p style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 300, lineHeight: 1.6, maxWidth: 480, margin: '0 auto 26px' }}>{screen.body}</p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 26 }}>
-                {screen.stats.map(s => (
-                  <div key={s.l}>
-                    <p className='am-serif' style={{ fontSize: 26, fontWeight: 600, color: 'var(--accent)', margin: 0 }}>
-                      {s.n}
-                    </p>
-                    <p className='am-eyebrow' style={{ fontSize: 9 }}>
-                      {s.l}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <StatGrid items={screen.stats.map(s => ({ value: s.n, label: s.l }))} />
               <div
                 style={{
                   border: '1px solid var(--rule)',
@@ -522,14 +519,7 @@ function OptCard({ o, selected, multi, onClick }: { o: Opt; selected?: boolean; 
           justifyContent: 'center',
         }}
       >
-        {selected &&
-          (multi ? (
-            <svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='var(--accent)' strokeWidth='3.5' strokeLinecap='round'>
-              <path d='M5 13l4 4L19 7' />
-            </svg>
-          ) : (
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)' }} />
-          ))}
+        {selected && (multi ? <CheckIcon size={12} /> : <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)' }} />)}
       </span>
     </button>
   )
@@ -590,11 +580,7 @@ function Analyzing() {
                 justifyContent: 'center',
               }}
             >
-              {idx < done && (
-                <svg width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='#fff' strokeWidth='3.5' strokeLinecap='round'>
-                  <path d='M5 13l4 4L19 7' />
-                </svg>
-              )}
+              {idx < done && <CheckIcon size={11} color='#fff' />}
             </span>
             <span style={{ fontSize: 14, color: 'var(--ink-soft)' }}>{it}</span>
           </div>

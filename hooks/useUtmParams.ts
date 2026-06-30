@@ -11,6 +11,8 @@ export interface UtmParams {
   utm_medium: string
   utm_campaign: string
   utm_content: string
+  /** All values are strings, so a UtmParams is also a plain string map (assignable to Record<string, string>). */
+  [key: string]: string
 }
 
 /** Merge current URL search params with stored params and persist the result.
@@ -51,16 +53,20 @@ function getMergedParams(): URLSearchParams {
   return current
 }
 
+/** Pluck the four UTM keys off a params bag, defaulting each to ''. */
+function pickUtms(params: URLSearchParams): UtmParams {
+  return {
+    utm_source: params.get('utm_source') || '',
+    utm_medium: params.get('utm_medium') || '',
+    utm_campaign: params.get('utm_campaign') || '',
+    utm_content: params.get('utm_content') || '',
+  }
+}
+
 /** React hook — returns UTM-specific params (for analytics payloads). */
 export function useUtmParams(): UtmParams {
   return useMemo(() => {
-    const params = getMergedParams()
-    const utms = {
-      utm_source: params.get('utm_source') || '',
-      utm_medium: params.get('utm_medium') || '',
-      utm_campaign: params.get('utm_campaign') || '',
-      utm_content: params.get('utm_content') || '',
-    }
+    const utms = pickUtms(getMergedParams())
     logger.debug('useUtmParams_resolved', utms)
     return utms
   }, [])
@@ -68,13 +74,7 @@ export function useUtmParams(): UtmParams {
 
 /** Non-hook — returns UTM-specific params (for analytics payloads). */
 export function getUtmParams(): UtmParams {
-  const params = getMergedParams()
-  return {
-    utm_source: params.get('utm_source') || '',
-    utm_medium: params.get('utm_medium') || '',
-    utm_campaign: params.get('utm_campaign') || '',
-    utm_content: params.get('utm_content') || '',
-  }
+  return pickUtms(getMergedParams())
 }
 
 /** Build a query string with only UTM params (for analytics/webhook payloads). */

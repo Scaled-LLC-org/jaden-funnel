@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { logger } from '@/lib/logger'
 
 /** Client island — sticky confirm bar that slides up a few seconds after load. */
 export function ThankYouStickyBar() {
@@ -28,6 +29,7 @@ export function ThankYouStickyBar() {
         <p style={{ fontSize: 13, color: 'var(--on-dark-soft)', fontWeight: 300, margin: 0 }}>Watch the videos before your call.</p>
         <a
           href='#'
+          onClick={() => logger.info('thank_you_confirm_click')}
           style={{
             padding: '9px 20px',
             background: 'var(--accent)',

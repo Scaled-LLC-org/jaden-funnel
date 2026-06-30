@@ -4,6 +4,10 @@ import { VideoPlayer } from '@/components/funnel/VideoPlayer'
 import { WaitHeadline } from '@/components/funnel/WaitHeadline'
 import { ThankYouCalendar } from '@/components/funnel/ThankYouCalendar'
 import { ThankYouStickyBar } from '@/components/funnel/ThankYouStickyBar'
+import { SectionHeading } from '@/components/funnel/SectionHeading'
+import { Accent } from '@/components/funnel/Accent'
+import { StatGrid } from '@/components/funnel/StatGrid'
+import { PlayIcon } from '@/components/funnel/icons'
 import { firstParam, type SearchParams } from '@/lib/search-params'
 import { getPageContent } from '@/lib/sanity/content'
 
@@ -118,9 +122,7 @@ function VideoGraphic() {
               justifyContent: 'center',
             }}
           >
-            <svg width='9' height='9' viewBox='0 0 24 24' fill='#fff'>
-              <path d='M8 5v14l11-7z' />
-            </svg>
+            <PlayIcon size={9} fill='#fff' />
           </span>
           <span style={{ height: 5, borderRadius: 3, background: 'var(--rule)', width: `${w}%` }} />
         </div>
@@ -187,12 +189,9 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
       {/* 3 STEPS */}
       <section style={{ padding: '56px 0', borderTop: '1px solid var(--rule)', background: 'var(--paper)' }}>
         <div className='am-wrap'>
-          <p className='am-eyebrow' style={{ marginBottom: 12 }}>
-            Before your call
-          </p>
-          <h2 style={{ fontWeight: 500, fontSize: 30, color: 'var(--ink-deep)', margin: '0 0 32px', letterSpacing: '-0.01em' }}>
-            Do these <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>three things.</em>
-          </h2>
+          <SectionHeading eyebrow='Before your call'>
+            Do these <Accent>three things.</Accent>
+          </SectionHeading>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
             {steps.map(s => (
               <div
@@ -255,12 +254,9 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
       {/* WATCH BEFORE WE TALK (2-col) */}
       <section style={{ padding: '64px 0' }}>
         <div className='am-wrap'>
-          <p className='am-eyebrow' style={{ color: 'var(--accent)', marginBottom: 12 }}>
-            ✓ Your call is booked
-          </p>
-          <h2 style={{ fontWeight: 500, fontSize: 30, color: 'var(--ink-deep)', margin: '0 0 32px', letterSpacing: '-0.01em' }}>
-            Watch this <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>before we talk</em>
-          </h2>
+          <SectionHeading eyebrow='✓ Your call is booked' eyebrowAccent>
+            Watch this <Accent>before we talk</Accent>
+          </SectionHeading>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 44, alignItems: 'center' }}>
             <VideoPlayer poster={PRECALL.poster} youtubeId={PRECALL.youtubeId} />
             <div>
@@ -298,12 +294,9 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
       {/* 3 BREAKOUTS */}
       <section style={{ padding: '64px 0', borderTop: '1px solid var(--rule)', background: 'var(--paper)' }}>
         <div className='am-wrap'>
-          <p className='am-eyebrow' style={{ marginBottom: 12 }}>
-            Watch in order · 20 minutes total
-          </p>
-          <h2 style={{ fontWeight: 500, fontSize: 30, color: 'var(--ink-deep)', margin: '0 0 36px', letterSpacing: '-0.01em' }}>
-            The three breakdowns to watch <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>before we talk</em>
-          </h2>
+          <SectionHeading eyebrow='Watch in order · 20 minutes total' marginBottom={36}>
+            The three breakdowns to watch <Accent>before we talk</Accent>
+          </SectionHeading>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 28 }}>
             {BREAKOUTS.map(b => (
               <div key={b.n}>
@@ -323,12 +316,9 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
       {/* TESTIMONIALS */}
       <section style={{ padding: '64px 0' }}>
         <div className='am-wrap'>
-          <p className='am-eyebrow' style={{ marginBottom: 12 }}>
-            Real clients, real physiques
-          </p>
-          <h2 style={{ fontWeight: 500, fontSize: 30, color: 'var(--ink-deep)', margin: '0 0 36px', letterSpacing: '-0.01em' }}>
-            Hear it from the <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>guys who did it</em>
-          </h2>
+          <SectionHeading eyebrow='Real clients, real physiques' marginBottom={36}>
+            Hear it from the <Accent>guys who did it</Accent>
+          </SectionHeading>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
             {TESTIMONIALS.map(t => (
               <div key={t.name}>
@@ -347,30 +337,18 @@ export default async function ThankYouPage({ searchParams }: { searchParams: Pro
       {/* ABOUT */}
       <section style={{ padding: '64px 0 80px', borderTop: '1px solid var(--rule)', background: 'var(--soft)' }}>
         <div className='am-wrap' style={{ textAlign: 'center', maxWidth: 720 }}>
-          <p className='am-eyebrow' style={{ marginBottom: 12 }}>
-            Quick background
-          </p>
-          <h2 style={{ fontWeight: 500, fontSize: 28, color: 'var(--ink-deep)', margin: '0 0 16px', letterSpacing: '-0.01em' }}>
-            This call is a <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>conversation</em>, not a pitch
-          </h2>
+          <SectionHeading eyebrow='Quick background' fontSize={28} marginBottom={16}>
+            This call is a <Accent>conversation</Accent>, not a pitch
+          </SectionHeading>
           <p style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 300, lineHeight: 1.7, margin: '0 0 36px' }}>{content.aboutBody}</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
-            {[
-              { num: '100%', label: 'Natural Approach' },
-              { num: '300+', label: 'Workout Library' },
-              { num: '1:1', label: 'Coaching With Jaden' },
-            ].map(s => (
-              <div
-                key={s.label}
-                style={{ borderTop: '1px solid var(--ink)', borderBottom: '1px solid var(--rule)', background: 'var(--bg)', padding: '22px 14px' }}
-              >
-                <p style={{ fontFamily: 'var(--serif)', fontWeight: 500, fontSize: 30, color: 'var(--ink-deep)', margin: '0 0 6px' }}>{s.num}</p>
-                <p className='am-eyebrow' style={{ fontSize: 9 }}>
-                  {s.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          <StatGrid
+            variant='card'
+            items={[
+              { value: '100%', label: 'Natural Approach' },
+              { value: '300+', label: 'Workout Library' },
+              { value: '1:1', label: 'Coaching With Jaden' },
+            ]}
+          />
         </div>
       </section>
 
