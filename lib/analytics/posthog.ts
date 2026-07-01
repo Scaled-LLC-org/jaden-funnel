@@ -7,6 +7,7 @@
  */
 import type { PostHog } from 'posthog-js'
 import { config, isPlaceholder } from '@/lib/config'
+import { getUtmParams } from '@/hooks/useUtmParams'
 import { logger } from '@/lib/logger'
 
 let ph: PostHog | null = null
@@ -19,6 +20,19 @@ function capture(eventName: string, properties?: Record<string, unknown>): void 
   } else {
     pendingEvents.push({ name: eventName, properties })
   }
+}
+
+/**
+ * Register session-wide super properties so every captured event carries the
+ * funnel id and any UTM attribution. Runs once at init, before queued events
+ * replay — so even the pre-init `funnel_pageview` inherits them.
+ */
+function registerFunnelContext(posthog: PostHog): void {
+  const superProps: Record<string, string> = { funnel: config.funnelId }
+  for (const [key, value] of Object.entries(getUtmParams())) {
+    if (value) superProps[key] = value
+  }
+  posthog.register(superProps)
 }
 
 /** Initialize PostHog. No-op on the server or when the API key is a placeholder. */
@@ -39,6 +53,7 @@ export async function initPostHog(): Promise<void> {
     autocapture: true,
   })
   ph = posthog
+  registerFunnelContext(posthog)
   logger.info('posthog_init_success')
 
   // Replay any events that fired before PostHog was ready.

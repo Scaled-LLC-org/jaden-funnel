@@ -42,9 +42,9 @@ async function postPipedream(data: OptInData): Promise<void> {
  */
 export async function submitLead(data: OptInData): Promise<void> {
   // Analytics first — synchronous, client-side, instant.
-  captureEvent('form_submit', { form_name: 'quiz', funnel: 'quiz' })
+  captureEvent('form_submit', { form_name: 'quiz', funnel: config.funnelId })
   captureEvent('opt_in', {
-    funnel: 'quiz',
+    funnel: config.funnelId,
     answerKeys: Object.keys(data.formData ?? {}),
   })
   if (data.email) {

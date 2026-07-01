@@ -1,8 +1,8 @@
 /**
  * Funnel topology — the single source of truth for the funnel's shape.
  *
- * `app/sitemap.ts` and `app/funnelmap.json/route.ts` both derive from this, so
- * the SEO sitemap, the machine-readable funnelmap, and the docs can never drift.
+ * `app/sitemap.ts` and `app/funnelmap.md/route.ts` both derive from this, so the
+ * SEO sitemap, the human-readable Markdown map, and the docs can never drift.
  * Update this file when a route, transition, param, or conversion event changes.
  *
  * State model: the funnel is stateless — each step rebuilds context from the URL
@@ -56,7 +56,7 @@ export const FUNNEL = {
     {
       id: 'home',
       path: '/',
-      title: 'Quiz (home)',
+      title: 'Quiz — Home',
       role: 'Funnel entry — multi-step quiz + lead capture (name / email / phone).',
       render: 'client-island',
       readsParams: [],
@@ -68,7 +68,7 @@ export const FUNNEL = {
     {
       id: 'quiz',
       path: '/quiz',
-      title: 'Quiz (alias)',
+      title: 'Quiz — Alias',
       role: 'Same QuizFlow as home, at /quiz.',
       render: 'client-island',
       readsParams: [],
@@ -80,7 +80,7 @@ export const FUNNEL = {
     {
       id: 'results',
       path: '/results',
-      title: 'Scored physique blueprint',
+      title: 'Results — Physique Blueprint',
       role: 'SSR 4-pillar score report from the quiz answers.',
       render: 'server',
       readsParams: ['age', 'goals', 'situation', 'frequency', 'natural', 'commit', 'name'],
@@ -92,7 +92,7 @@ export const FUNNEL = {
     {
       id: 'vsl',
       path: '/vsl',
-      title: 'VSL',
+      title: 'Sales Video (VSL)',
       role: 'Sales video with a click-to-pause exit-intent CTA.',
       render: 'server',
       readsParams: ['*'],
@@ -116,7 +116,7 @@ export const FUNNEL = {
     {
       id: 'thank-you',
       path: '/thank-you',
-      title: 'Post-booking nurture',
+      title: 'Thank You — Pre-Call Nurture',
       role: 'Confirmation + pre-call videos; localizes the Calendly call time to the viewer.',
       render: 'server',
       readsParams: ['invitee_first_name', 'event_start_time', 'date', 'time', 'name', 'start', 'iso'],
@@ -128,7 +128,7 @@ export const FUNNEL = {
     {
       id: 'community',
       path: '/community',
-      title: 'Community upsell',
+      title: 'Community Upsell',
       role: 'Standalone Skool membership upsell ($97/mo). Not part of the linear quiz path.',
       render: 'server',
       readsParams: [],
@@ -151,23 +151,176 @@ export const FUNNEL = {
   ],
 } as const
 
-/** Build the deployable funnelmap document (absolute URLs + a build/deploy timestamp). */
-export function buildFunnelMap({ siteUrl, generatedAt }: { siteUrl: string; generatedAt: string }) {
-  return {
-    $schema: 'https://aesthetic-mastery/funnelmap.schema.json',
-    version: 1,
-    name: FUNNEL.name,
-    brand: FUNNEL.brand,
-    description: FUNNEL.description,
-    generatedAt,
-    siteUrl,
-    conversion: FUNNEL.conversion,
-    globalEvents: FUNNEL.globalEvents,
-    entry: `${siteUrl}/`,
-    steps: FUNNEL.steps.map(s => ({
-      ...s,
-      url: `${siteUrl}${s.path === '/' ? '' : s.path}`,
-    })),
-    external: FUNNEL.external,
+// ─────────────────────────────────────────────────────────────────────────────
+// Human-readable Markdown map (served at /funnelmap.md)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type FunnelStepDef = (typeof FUNNEL.steps)[number]
+type FunnelExternalDef = (typeof FUNNEL.external)[number]
+
+const stepById = new Map<string, FunnelStepDef>(FUNNEL.steps.map(s => [s.id, s] as [string, FunnelStepDef]))
+const externalById = new Map<string, FunnelExternalDef>(FUNNEL.external.map(e => [e.id, e] as [string, FunnelExternalDef]))
+
+const nextOf = (id: string): readonly FunnelTransition[] => stepById.get(id)?.next ?? []
+
+/** Resolve a transition target to an internal step, bridging external hops via `between`. */
+function resolveInternalTarget(to: string): StepId | null {
+  if (stepById.has(to)) return to as StepId
+  const ext = externalById.get(to)
+  if (ext && 'between' in ext) return ext.between[1] as StepId
+  return null
+}
+
+export interface FunnelLevels {
+  /** Main linear path, entry first. */
+  mainPath: StepId[]
+  /** 0-based depth for each main-path step. */
+  levelOf: Map<StepId, number>
+  /** Off-path steps that feed back into the main path (e.g. the /quiz alias). */
+  alternateEntries: { id: StepId; level: number }[]
+  /** Off-path steps that branch out and never rejoin (e.g. /community). */
+  standalone: StepId[]
+}
+
+/**
+ * Derive each page's level from the topology — no hardcoded depths, so it stays
+ * in sync with `steps`. Walks `next` from the entry, bridging external hops.
+ */
+export function computeFunnelLevels(): FunnelLevels {
+  const mainPath: StepId[] = []
+  const levelOf = new Map<StepId, number>()
+  let cur: StepId | null = 'home'
+  while (cur && !levelOf.has(cur)) {
+    levelOf.set(cur, mainPath.length)
+    mainPath.push(cur)
+    let next: StepId | null = null
+    for (const t of nextOf(cur)) {
+      const target = resolveInternalTarget(t.to)
+      if (target && !levelOf.has(target)) {
+        next = target
+        break
+      }
+    }
+    cur = next
   }
+
+  const alternateEntries: { id: StepId; level: number }[] = []
+  const standalone: StepId[] = []
+  for (const s of FUNNEL.steps) {
+    if (levelOf.has(s.id)) continue
+    let feedsLevel: number | null = null
+    for (const t of s.next) {
+      const target = resolveInternalTarget(t.to)
+      if (target && levelOf.has(target)) {
+        feedsLevel = levelOf.get(target)! - 1
+        break
+      }
+    }
+    if (feedsLevel !== null) alternateEntries.push({ id: s.id, level: Math.max(0, feedsLevel) })
+    else standalone.push(s.id)
+  }
+
+  return { mainPath, levelOf, alternateEntries, standalone }
+}
+
+/** Render the funnel as a human-readable Markdown document (served at /funnelmap.md). */
+export function buildFunnelMarkdown({ siteUrl, generatedAt }: { siteUrl: string; generatedAt: string }): string {
+  const { mainPath, levelOf, alternateEntries, standalone } = computeFunnelLevels()
+
+  const titleOf = (id: string) => stepById.get(id)?.title ?? id
+  const pathOf = (id: string) => stepById.get(id)?.path ?? '/'
+  const readsOf = (id: string): readonly string[] => stepById.get(id)?.readsParams ?? []
+  const writesOf = (id: string): readonly string[] => stepById.get(id)?.writesParams ?? []
+  const eventsOf = (id: string): readonly string[] => stepById.get(id)?.events ?? []
+
+  const fmtParams = (arr: readonly string[]) => (arr.length === 0 ? '—' : arr.includes('*') ? 'all' : arr.join(', '))
+  const fmtEvents = (arr: readonly string[]) => (arr.length === 0 ? '—' : arr.join(', '))
+
+  const forwardExternal = (id: string) => {
+    const t = nextOf(id).find(n => n.external)
+    return t ? ` → ${externalById.get(t.to)?.name ?? t.to} ↗` : ''
+  }
+  const returnsFrom = (id: string) => {
+    for (const e of FUNNEL.external) if ('between' in e && e.between[1] === id) return ` ← back from ${e.name}`
+    return ''
+  }
+  const nextLabel = (id: string) => {
+    const ns = nextOf(id)
+    if (ns.length === 0) return '—'
+    return ns.map(t => (t.external ? `${externalById.get(t.to)?.name ?? t.to} ↗` : titleOf(t.to))).join(' / ')
+  }
+
+  const conv = FUNNEL.conversion
+  const aliasIdsAtLevel = (level: number) => alternateEntries.filter(a => a.level === level).map(a => a.id)
+
+  // ── Funnel Flow: indentation = level ──
+  const labelWidth = Math.max(0, ...mainPath.map(id => (levelOf.get(id) ?? 0) * 2 + pathOf(id).length), ...standalone.map(id => pathOf(id).length)) + 3
+  const stairLine = (id: string, level: number, suffix: string) => ('  '.repeat(level) + pathOf(id)).padEnd(labelWidth) + titleOf(id) + suffix
+
+  const mainStair = mainPath.map(id => {
+    const level = levelOf.get(id) ?? 0
+    const aliasIds = aliasIdsAtLevel(level)
+    const aliasNote = aliasIds.length ? `   · also ${aliasIds.map(pathOf).join(', ')}` : ''
+    const convNote = id === conv.step || aliasIds.includes(conv.step) ? '   · ★ opt-in' : ''
+    return stairLine(id, level, forwardExternal(id) + returnsFrom(id) + convNote + aliasNote)
+  })
+  const standaloneStair = standalone.map(id => stairLine(id, 0, forwardExternal(id) + '   · standalone'))
+  const staircase = [...mainStair, ...(standaloneStair.length ? ['', ...standaloneStair] : [])].join('\n')
+
+  // ── Pages by Level ──
+  const row = (id: string, level: string, page: string) =>
+    `| ${level} | ${page} | \`${pathOf(id)}\` | ${fmtParams(readsOf(id))} | ${fmtParams(writesOf(id))} | ${nextLabel(id)} | ${fmtEvents(eventsOf(id))} |`
+  const tableRows: string[] = []
+  for (const id of mainPath) {
+    const level = levelOf.get(id)!
+    tableRows.push(row(id, String(level), titleOf(id)))
+    for (const a of alternateEntries.filter(a => a.level === level)) tableRows.push(row(a.id, String(level), `↳ ${titleOf(a.id)} _(alias)_`))
+  }
+  for (const id of standalone) tableRows.push(row(id, '—', titleOf(id)))
+
+  return `# ${FUNNEL.name}
+
+> ${FUNNEL.description}
+
+**Site:** ${siteUrl}  ·  _generated at build: ${generatedAt}_
+
+## Funnel Flow
+
+_Indentation = funnel depth.  ★ lead opt-in (conversion).  ↗ external handoff._
+
+\`\`\`
+${staircase}
+\`\`\`
+
+## Pages by Level
+
+_**Reads** = URL params consumed · **Forwards** = params passed onward · **Next** = where it goes · **Events** = analytics fired._
+
+| Level | Page | Route | Reads | Forwards | → Next | Events |
+|:-:|---|---|---|---|---|---|
+${tableRows.join('\n')}
+
+_Every page also fires: ${FUNNEL.globalEvents.join(', ')}.  ·  Conversion: \`${conv.event}\` → ${conv.sinks.join(', ')}._
+`
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics — pathname → funnel step resolver (feeds funnel_pageview enrichment)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const stepByPath = new Map<string, StepId>(FUNNEL.steps.map(s => [s.path, s.id]))
+
+/** 0-based funnel depth per step (main path + aliases; standalone steps absent). */
+const stepIndexById: Map<StepId, number> = (() => {
+  const { levelOf, alternateEntries } = computeFunnelLevels()
+  const m = new Map<StepId, number>(levelOf)
+  for (const a of alternateEntries) m.set(a.id, a.level)
+  return m
+})()
+
+/** Resolve a pathname to its funnel step id + 0-based depth. Null when off-funnel. */
+export function stepForPath(pathname: string): { step: StepId; stepIndex: number | null } | null {
+  const step = stepByPath.get(pathname)
+  if (!step) return null
+  return { step, stepIndex: stepIndexById.get(step) ?? null }
 }

@@ -40,6 +40,8 @@ export const config = {
   },
   /** Differentiates this client inside the shared `scaled_landings` schema. */
   workspaceId: 121,
+  /** Funnel identifier — registered as a PostHog super property (rides every event). */
+  funnelId: 'quiz',
 } as const
 
 /** True when a config value is still an unset `PLACEHOLDER_*` sentinel. */
